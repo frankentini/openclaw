@@ -540,6 +540,20 @@ export const registerTelegramNativeCommands = ({
     chunkMode: params.chunkMode,
     linkPreview: telegramCfg.linkPreview,
   });
+  const resolveDmThreadSessionKey = (params: {
+    baseSessionKey: string;
+    chatId: string | number;
+    threadSpec: ReturnType<typeof resolveTelegramThreadSpec>;
+  }): string => {
+    const dmThreadId = params.threadSpec.scope === "dm" ? params.threadSpec.id : undefined;
+    if (dmThreadId == null) {
+      return params.baseSessionKey;
+    }
+    return resolveThreadSessionKeys({
+      baseSessionKey: params.baseSessionKey,
+      threadId: `${params.chatId}:${dmThreadId}`,
+    }).sessionKey;
+  };
 
   if (commandsToRegister.length > 0 || pluginCatalog.commands.length > 0) {
     if (typeof (bot as unknown as { command?: unknown }).command !== "function") {
@@ -647,17 +661,11 @@ export const registerTelegramNativeCommands = ({
             });
             return;
           }
-          const baseSessionKey = route.sessionKey;
-          // DMs: use raw messageThreadId for thread sessions (not resolvedThreadId which is for forums)
-          const dmThreadId = threadSpec.scope === "dm" ? threadSpec.id : undefined;
-          const threadKeys =
-            dmThreadId != null
-              ? resolveThreadSessionKeys({
-                  baseSessionKey,
-                  threadId: `${chatId}:${dmThreadId}`,
-                })
-              : null;
-          const sessionKey = threadKeys?.sessionKey ?? baseSessionKey;
+          const sessionKey = resolveDmThreadSessionKey({
+            baseSessionKey: route.sessionKey,
+            chatId,
+            threadSpec,
+          });
           const { skillFilter, groupSystemPrompt } = resolveTelegramGroupPromptSettings({
             groupConfig,
             topicConfig,
@@ -833,10 +841,15 @@ export const registerTelegramNativeCommands = ({
             return;
           }
           const { threadSpec, route, mediaLocalRoots, tableMode, chunkMode } = runtimeContext;
+          const sessionKeyForInternalHooks = resolveDmThreadSessionKey({
+            baseSessionKey: route.sessionKey,
+            chatId,
+            threadSpec,
+          });
           const deliveryBaseOptions = buildCommandDeliveryBaseOptions({
             chatId,
             accountId: route.accountId,
-            sessionKeyForInternalHooks: route.sessionKey,
+            sessionKeyForInternalHooks,
             mirrorIsGroup: isGroup,
             mirrorGroupId: isGroup ? String(chatId) : undefined,
             mediaLocalRoots,
