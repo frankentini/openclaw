@@ -9,11 +9,15 @@
   flex-direction: column;
   flex: 1 1 0;
   height: 100%;
-  min-height: 0; /* Allow flex shrinking */
+  width: 100%;
+  min-height: 0;
+  /* Allow flex shrinking */
   overflow: hidden;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
+  backdrop-filter: blur(14px) saturate(1.15);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
 }
 
 /* Chat header - fixed at top, transparent */
@@ -24,8 +28,8 @@
   gap: 12px;
   flex-wrap: nowrap;
   flex-shrink: 0;
-  padding-bottom: 12px;
-  margin-bottom: 12px;
+  padding-bottom: 0;
+  margin-bottom: 0;
   background: transparent;
 }
 
@@ -49,14 +53,20 @@
 
 /* Chat thread - scrollable middle section, transparent */
 .chat-thread {
-  flex: 1 1 0; /* Grow, shrink, and use 0 base for proper scrolling */
+  flex: 1 1 0;
+  /* Grow, shrink, and use 0 base for proper scrolling */
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 12px 4px;
-  margin: 0 -4px;
-  min-height: 0; /* Allow shrinking for flex scroll behavior */
+  padding: 0 6px 6px;
+  margin: 0 0 0 0;
+  min-height: 0;
+  /* Allow shrinking for flex scroll behavior */
   border-radius: 12px;
   background: transparent;
+}
+
+.chat-thread-inner> :first-child {
+  margin-top: 0 !important;
 }
 
 /* Focus mode exit button */
@@ -146,7 +156,8 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: auto; /* Push to bottom of flex container */
+  margin-top: auto;
+  /* Push to bottom of flex container */
   padding: 12px 4px 4px;
   background: linear-gradient(to bottom, transparent, var(--bg) 20%);
   z-index: 10;
@@ -163,7 +174,8 @@
   border: 1px solid var(--border);
   width: fit-content;
   max-width: 100%;
-  align-self: flex-start; /* Don't stretch in flex column parent */
+  align-self: flex-start;
+  /* Don't stretch in flex column parent */
 }
 
 .chat-attachment {
@@ -279,7 +291,7 @@
 }
 
 /* Hide the "Message" label - keep textarea only */
-.chat-compose__field > span {
+.chat-compose__field>span {
   display: none;
 }
 
@@ -350,7 +362,7 @@
   }
 }
 
-.agent-chat__input > textarea {
+.agent-chat__input>textarea {
   width: 100%;
   min-height: 40px;
   max-height: 150px;
@@ -366,7 +378,7 @@
   box-sizing: border-box;
 }
 
-.agent-chat__input > textarea::placeholder {
+.agent-chat__input>textarea::placeholder {
   color: var(--muted);
 }
 
@@ -508,7 +520,7 @@
   scrollbar-width: thin;
 }
 
-.slash-menu-group + .slash-menu-group {
+.slash-menu-group+.slash-menu-group {
   margin-top: 4px;
   padding-top: 4px;
   border-top: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
