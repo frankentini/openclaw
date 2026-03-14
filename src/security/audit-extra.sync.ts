@@ -338,7 +338,6 @@ function hasWebSearchKey(cfg: OpenClawConfig, env: NodeJS.ProcessEnv): boolean {
       env.BRAVE_API_KEY ||
       env.PERPLEXITY_API_KEY ||
       env.GEMINI_API_KEY ||
-      env.GOOGLE_API_KEY ||
       env.XAI_API_KEY ||
       env.KIMI_API_KEY ||
       env.MOONSHOT_API_KEY,
