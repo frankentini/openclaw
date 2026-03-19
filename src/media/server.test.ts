@@ -62,6 +62,12 @@ describe("media server", () => {
     const res = await fetch(mediaUrl("file1"));
     expect(res.status).toBe(200);
     expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(res.headers.get("x-frame-options")).toBe("DENY");
+    expect(res.headers.get("referrer-policy")).toBe("no-referrer");
+    expect(res.headers.get("content-security-policy")).toBe(
+      "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+    );
+    expect(res.headers.get("cache-control")).toBe("no-store");
     expect(await res.text()).toBe("hello");
     await waitForFileRemoval(file);
   });

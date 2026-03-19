@@ -34,6 +34,13 @@ export function attachMediaRoutes(
 
   app.get("/media/:id", async (req, res) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("Referrer-Policy", "no-referrer");
+    res.setHeader(
+      "Content-Security-Policy",
+      "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+    );
+    res.setHeader("Cache-Control", "no-store");
     const id = req.params.id;
     if (!isValidMediaId(id)) {
       res.status(400).send("invalid path");
