@@ -13,5 +13,6 @@ export function buildControlUiCspHeader(): string {
     "img-src 'self' data: https:",
     "font-src 'self' https://fonts.gstatic.com",
     "connect-src 'self' ws: wss:",
+    "form-action 'self'",
   ].join("; ");
 }

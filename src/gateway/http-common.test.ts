@@ -46,4 +46,10 @@ describe("setDefaultSecurityHeaders", () => {
     setDefaultSecurityHeaders(res, { strictTransportSecurity: "" });
     expect(setHeader).not.toHaveBeenCalledWith("Strict-Transport-Security", expect.anything());
   });
+
+  it("sets X-Permitted-Cross-Domain-Policies to none", () => {
+    const { res, setHeader } = makeMockHttpResponse();
+    setDefaultSecurityHeaders(res);
+    expect(setHeader).toHaveBeenCalledWith("X-Permitted-Cross-Domain-Policies", "none");
+  });
 });

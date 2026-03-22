@@ -15,6 +15,9 @@ export function setDefaultSecurityHeaders(
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Referrer-Policy", "no-referrer");
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  // Prevent Adobe Flash/Acrobat from loading cross-domain policy files that
+  // could grant read access to response data from this origin.
+  res.setHeader("X-Permitted-Cross-Domain-Policies", "none");
   const strictTransportSecurity = opts?.strictTransportSecurity;
   if (typeof strictTransportSecurity === "string" && strictTransportSecurity.length > 0) {
     res.setHeader("Strict-Transport-Security", strictTransportSecurity);

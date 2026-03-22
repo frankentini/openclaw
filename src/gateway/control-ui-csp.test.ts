@@ -15,4 +15,9 @@ describe("buildControlUiCspHeader", () => {
     expect(csp).toContain("https://fonts.googleapis.com");
     expect(csp).toContain("font-src 'self' https://fonts.gstatic.com");
   });
+
+  it("restricts form submissions to same origin", () => {
+    const csp = buildControlUiCspHeader();
+    expect(csp).toContain("form-action 'self'");
+  });
 });
