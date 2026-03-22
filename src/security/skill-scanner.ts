@@ -135,6 +135,10 @@ type LineRule = {
   pattern: RegExp;
   /** If set, the rule only fires when the *full source* also matches this pattern. */
   requiresContext?: RegExp;
+  /** If set, the rule is skipped for files with these extensions (e.g. [".py"]). */
+  excludeExtensions?: string[];
+  /** If set, the rule only fires for files with these extensions (e.g. [".py"]). */
+  includeExtensions?: string[];
 };
 
 type SourceRule = {
@@ -160,6 +164,7 @@ const LINE_RULES: LineRule[] = [
     severity: "critical",
     message: "Dynamic code execution detected",
     pattern: /\beval\s*\(|new\s+Function\s*\(/,
+    excludeExtensions: [".py"],
   },
   {
     ruleId: "crypto-mining",
@@ -178,15 +183,14 @@ const LINE_RULES: LineRule[] = [
     severity: "critical",
     message: "Potentially dangerous Python command execution detected",
     pattern:
-      /\b(?:subprocess\.(?:call|run|Popen)\s*\(\s*(?:["'][^"']+["']|[^)\n]*\bshell\s*=\s*True\b)|os\.(?:system|popen|execl|execle|execlp|execlpe|execv|execve|execvp|execvpe)\s*\(\s*["'][^"']+["'])/,
+      /\b(?:subprocess\.(?:call|run|Popen)\s*\([^)\n]*\bshell\s*=\s*True\b|os\.(?:system|popen|execl|execle|execlp|execlpe|execv|execve|execvp|execvpe)\s*\(\s*["'][^"']+["'])/,
   },
   {
     ruleId: "dynamic-code-execution-python",
     severity: "critical",
     message: "Dynamic code execution detected in Python",
-    pattern: /(?<!["'`\w])(?:exec|eval|compile)\s*\(/,
-    requiresContext:
-      /(?:^|\n)\s*(?:import\s+\w+|from\s+\w+\s+import|def\s+\w+\s*\(|class\s+\w+\s*:|if\s+__name__\s*==)/m,
+    pattern: /(?<!["'`\w.])(?:exec|eval|compile)\s*\(/,
+    includeExtensions: [".py"],
   },
   {
     ruleId: "dangerous-import-python",
@@ -199,7 +203,7 @@ const LINE_RULES: LineRule[] = [
     severity: "warn",
     message: "Python network call detected",
     pattern:
-      /\burllib\.request\b|\brequests\.(?:post|get)\s*\(|\bhttpx(?:\.[a-zA-Z_]\w*)?\s*\(|\bsocket\.connect\s*\(/,
+      /\burllib\.request\b|\brequests\.(?:post|get|put|patch|request)\s*\(|\bhttpx(?:\.[a-zA-Z_]\w*)?\s*\(|\bsocket\.connect\s*\(/,
   },
   {
     ruleId: "dangerous-eval-shell",
@@ -219,7 +223,7 @@ const LINE_RULES: LineRule[] = [
     severity: "warn",
     message: "Suspicious wget download target detected",
     pattern:
-      /\bwget\b[^\n]*(?:https?:\/\/(?:\d{1,3}(?:\.\d{1,3}){3}|(?:bit\.ly|tinyurl\.com|pastebin\.com|raw\.githubusercontent\.com))|(?:bit\.ly|tinyurl\.com|pastebin\.com|raw\.githubusercontent\.com))/i,
+      /\bwget\b[^\n]*(?:https?:\/\/(?:\d{1,3}(?:\.\d{1,3}){3}|(?:bit\.ly|tinyurl\.com|pastebin\.com))|(?:bit\.ly|tinyurl\.com|pastebin\.com))/i,
   },
   {
     ruleId: "env-exfiltration-shell",
@@ -304,6 +308,15 @@ export function scanSource(source: string, filePath: string): SkillScanFinding[]
   // --- Line rules ---
   for (const rule of LINE_RULES) {
     if (matchedLineRules.has(rule.ruleId)) {
+      continue;
+    }
+
+    // Skip rule if file extension is excluded or not included
+    const ext = path.extname(filePath).toLowerCase();
+    if (rule.excludeExtensions && rule.excludeExtensions.includes(ext)) {
+      continue;
+    }
+    if (rule.includeExtensions && !rule.includeExtensions.includes(ext)) {
       continue;
     }
 
