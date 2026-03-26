@@ -457,12 +457,19 @@ export function applyPluginAutoEnable(params: {
       continue;
     }
     const allow = next.plugins?.allow;
-    // Skip auto-enable for non-built-in plugins already listed in plugins.allow.
-    // plugins.allow is the user's explicit opt-in; writing to plugins.entries
-    // would trigger a config-change → gateway reload → doctor re-run loop.
+    // Skip auto-enable for local/external (non-bundled) plugins already in
+    // plugins.allow. For these plugins, `plugins.allow` is sufficient to make
+    // them load; writing to `plugins.entries` would trigger a config-change →
+    // gateway reload → doctor re-run loop.
+    // Bundled plugins (like acpx, copilot-proxy) still need
+    // `plugins.entries.<id>.enabled = true` because they are not in
+    // BUNDLED_ENABLED_BY_DEFAULT and `resolveEnableState` requires it.
     // See: https://github.com/openclaw/openclaw/issues/55163
     if (builtInChannelId == null && Array.isArray(allow) && allow.includes(entry.pluginId)) {
-      continue;
+      const manifest = registry.plugins.find((p) => p.id === entry.pluginId);
+      if (manifest?.origin !== "bundled") {
+        continue;
+      }
     }
     const allowMissing =
       builtInChannelId == null && Array.isArray(allow) && !allow.includes(entry.pluginId);
