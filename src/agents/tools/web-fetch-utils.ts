@@ -32,6 +32,13 @@ async function loadReadabilityDeps(): Promise<{
   }
 }
 
+function safeFromCodePoint(code: number): string {
+  if (!Number.isFinite(code) || code < 0 || code > 0x10ffff) {
+    return "";
+  }
+  return String.fromCodePoint(code);
+}
+
 function decodeEntities(value: string): string {
   return value
     .replace(/&nbsp;/gi, " ")
@@ -40,8 +47,8 @@ function decodeEntities(value: string): string {
     .replace(/&#39;/gi, "'")
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
-    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(Number.parseInt(hex, 16)))
-    .replace(/&#(\d+);/gi, (_, dec) => String.fromCharCode(Number.parseInt(dec, 10)));
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => safeFromCodePoint(Number.parseInt(hex, 16)))
+    .replace(/&#(\d+);/gi, (_, dec) => safeFromCodePoint(Number.parseInt(dec, 10)));
 }
 
 function stripTags(value: string): string {
