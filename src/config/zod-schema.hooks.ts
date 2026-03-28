@@ -49,7 +49,7 @@ export const HookMappingSchema = z
     textTemplate: z.string().optional(),
     deliver: z.boolean().optional(),
     allowUnsafeExternalContent: z.boolean().optional(),
-    channel: z.string().optional(),
+    channel: z.string().min(1).optional(),
     to: z.string().optional(),
     model: z.string().optional(),
     thinking: z.string().optional(),
