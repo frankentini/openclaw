@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import type { Server } from "node:http";
+import path from "node:path";
 import express, { type Express } from "express";
 import { danger } from "../globals.js";
 import { SafeOpenError, readFileWithinRoot } from "../infra/fs-safe.js";
@@ -11,6 +12,26 @@ const DEFAULT_TTL_MS = 2 * 60 * 1000;
 const MAX_MEDIA_ID_CHARS = 200;
 const MEDIA_ID_PATTERN = /^[\p{L}\p{N}._-]+$/u;
 const MAX_MEDIA_BYTES = MEDIA_MAX_BYTES;
+
+/**
+ * MIME types that are safe to render inline in the browser.  Everything else
+ * gets a `Content-Disposition: attachment` header so the browser never
+ * interprets potentially active content (HTML, SVG+script, XML, etc.) inside
+ * the gateway origin.
+ */
+const INLINE_SAFE_MIME_PREFIXES: readonly string[] = ["image/", "audio/", "video/"];
+
+function shouldForceDownload(mime: string | undefined): boolean {
+  if (!mime) {
+    return true;
+  }
+  // SVG can carry embedded scripts, so it must not render inline even though
+  // it starts with "image/".
+  if (mime === "image/svg+xml") {
+    return true;
+  }
+  return !INLINE_SAFE_MIME_PREFIXES.some((prefix) => mime.startsWith(prefix));
+}
 
 const isValidMediaId = (id: string) => {
   if (!id) {
@@ -34,6 +55,7 @@ export function attachMediaRoutes(
 
   app.get("/media/:id", async (req, res) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Cache-Control", "no-store");
     const id = req.params.id;
     if (!isValidMediaId(id)) {
       res.status(400).send("invalid path");
@@ -58,6 +80,16 @@ export function attachMediaRoutes(
       if (mime) {
         res.type(mime);
       }
+
+      // Force download for any MIME type that could carry active content
+      // (HTML, SVG, XML, PDF with JS, etc.) to prevent XSS in the gateway
+      // origin.  Safe media types (images, audio, video) render inline.
+      if (shouldForceDownload(mime)) {
+        const ext = path.extname(id) || "";
+        const safeFilename = `download${ext}`;
+        res.setHeader("Content-Disposition", `attachment; filename="${safeFilename}"`);
+      }
+
       res.send(data);
       // best-effort single-use cleanup after response ends
       res.on("finish", () => {

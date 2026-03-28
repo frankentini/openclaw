@@ -202,4 +202,50 @@ describe("media server", () => {
   ] as const)("%#", async (testCase) => {
     await expectFetchedMediaCase(testCase);
   });
+
+  describe("content-disposition hardening", () => {
+    it("forces download for HTML files", async () => {
+      await writeMediaFile("page.html", "<script>alert(1)</script>");
+      const res = await realFetch(mediaUrl("page.html"));
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-disposition")).toMatch(/^attachment/);
+    });
+
+    it("forces download for SVG files", async () => {
+      await writeMediaFile(
+        "icon.svg",
+        '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+      );
+      const res = await realFetch(mediaUrl("icon.svg"));
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-disposition")).toMatch(/^attachment/);
+    });
+
+    it("does not force download for JPEG images", async () => {
+      // Minimal JFIF header so file-type detects image/jpeg
+      const jpegHeader = Buffer.from([
+        0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x00, 0x00,
+        0x01, 0x00, 0x01, 0x00, 0x00,
+      ]);
+      const file = path.join(MEDIA_DIR, "photo.jpg");
+      await fs.writeFile(file, jpegHeader);
+      const res = await realFetch(mediaUrl("photo.jpg"));
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-disposition")).toBeNull();
+    });
+
+    it("forces download for PDF files", async () => {
+      await writeMediaFile("doc.pdf", "%PDF-1.4 fake");
+      const res = await realFetch(mediaUrl("doc.pdf"));
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-disposition")).toMatch(/^attachment/);
+    });
+
+    it("sets Cache-Control: no-store on all media responses", async () => {
+      await writeMediaFile("cached.txt", "data");
+      const res = await realFetch(mediaUrl("cached.txt"));
+      expect(res.status).toBe(200);
+      expect(res.headers.get("cache-control")).toBe("no-store");
+    });
+  });
 });
