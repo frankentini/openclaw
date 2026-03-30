@@ -784,6 +784,16 @@ export function createGatewayHttpServer(opts: {
         void handleRequest(req, res);
       });
 
+  // Harden against Slowloris and slow-read DoS attacks by enforcing timeouts
+  // on header reception, full request delivery, and idle keep-alive connections.
+  // Node.js defaults are very permissive (headersTimeout: 60s, requestTimeout: 0,
+  // keepAliveTimeout: 5s) which allows resource exhaustion with minimal effort.
+  httpServer.headersTimeout = 30_000; // 30s to receive complete headers
+  httpServer.requestTimeout = 120_000; // 2min for the full request (body included)
+  httpServer.keepAliveTimeout = 30_000; // 30s idle before closing keep-alive sockets
+  // Cap max headers per request to limit header-bomb memory pressure.
+  httpServer.maxHeadersCount = 100;
+
   async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     setDefaultSecurityHeaders(res, {
       strictTransportSecurity: strictTransportSecurityHeader,
