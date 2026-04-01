@@ -7,22 +7,22 @@ export function normalizeStringEntriesLower(list?: ReadonlyArray<unknown>) {
 }
 
 export function normalizeHyphenSlug(raw?: string | null) {
-  const trimmed = raw?.trim().toLowerCase() ?? "";
+  const trimmed = raw?.trim().toLowerCase().normalize("NFC") ?? "";
   if (!trimmed) {
     return "";
   }
   const dashed = trimmed.replace(/\s+/g, "-");
-  const cleaned = dashed.replace(/[^\p{L}\p{N}#@._+-]+/gu, "-");
+  const cleaned = dashed.replace(/[^\p{L}\p{M}\p{N}#@._+-]+/gu, "-");
   return cleaned.replace(/-{2,}/g, "-").replace(/^[-.]+|[-.]+$/g, "");
 }
 
 export function normalizeAtHashSlug(raw?: string | null) {
-  const trimmed = raw?.trim().toLowerCase() ?? "";
+  const trimmed = raw?.trim().toLowerCase().normalize("NFC") ?? "";
   if (!trimmed) {
     return "";
   }
   const withoutPrefix = trimmed.replace(/^[@#]+/, "");
   const dashed = withoutPrefix.replace(/[\s_]+/g, "-");
-  const cleaned = dashed.replace(/[^\p{L}\p{N}-]+/gu, "-");
+  const cleaned = dashed.replace(/[^\p{L}\p{M}\p{N}-]+/gu, "-");
   return cleaned.replace(/-{2,}/g, "-").replace(/^-+|-+$/g, "");
 }

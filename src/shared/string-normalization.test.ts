@@ -75,4 +75,23 @@ describe("shared/string-normalization", () => {
     // Korean
     expect(normalizeAtHashSlug("#한국어채널")).toBe("한국어채널");
   });
+
+  it("preserves decomposed accented characters via NFC normalization", () => {
+    // Decomposed e + combining acute accent (U+0301) should normalize to "école"
+    expect(normalizeHyphenSlug("e\u0301cole")).toBe("\u00E9cole");
+    // Decomposed form should produce same result as precomposed
+    expect(normalizeHyphenSlug("e\u0301cole")).toBe(normalizeHyphenSlug("\u00E9cole"));
+    // normalizeAtHashSlug should also handle decomposed forms
+    expect(normalizeAtHashSlug("#e\u0301cole")).toBe("\u00E9cole");
+    expect(normalizeAtHashSlug("#e\u0301cole")).toBe(normalizeAtHashSlug("#\u00E9cole"));
+  });
+
+  it("preserves Hindi/Devanagari with combining marks", () => {
+    // Hindi: हिन्दी contains combining marks (vowel signs)
+    expect(normalizeHyphenSlug("हिन्दी")).toBe("हिन्दी");
+    expect(normalizeHyphenSlug("हिन्दी समूह")).toBe("हिन्दी-समूह");
+    expect(normalizeAtHashSlug("#हिन्दी")).toBe("हिन्दी");
+    // Thai with combining marks
+    expect(normalizeHyphenSlug("สวัสดี")).toBe("สวัสดี");
+  });
 });
