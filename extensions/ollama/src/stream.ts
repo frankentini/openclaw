@@ -728,11 +728,6 @@ export function createOllamaStreamFn(
           signal: finalSignal,
         });
 
-        // Clean up timeout if we set one
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-        }
-
         if (!response.ok) {
           const errorText = await response.text().catch(() => "unknown error");
           throw new Error(`${response.status} ${errorText}`);
@@ -834,6 +829,11 @@ export function createOllamaStreamFn(
           }),
         });
       } finally {
+        // Clean up timeout after stream consumption completes (or errors).
+        // Placed in finally so error exits are covered too.
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
         stream.end();
       }
     };

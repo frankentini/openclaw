@@ -259,6 +259,7 @@ export const ModelProviderSchema = z
     headers: z.record(z.string(), SecretInputSchema.register(sensitive)).optional(),
     authHeader: z.boolean().optional(),
     models: z.array(ModelDefinitionSchema),
+    timeoutSeconds: z.number().int().positive().optional(),
   })
   .strict();
 
