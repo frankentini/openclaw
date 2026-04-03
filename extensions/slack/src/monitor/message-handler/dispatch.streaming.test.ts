@@ -4,6 +4,7 @@ import {
   resolveSlackStreamingThreadHint,
   shouldEnableSlackPreviewStreaming,
   shouldInitializeSlackDraftStream,
+  shouldSuppressStreamingPayload,
 } from "./dispatch.js";
 
 describe("slack native streaming defaults", () => {
@@ -132,13 +133,25 @@ describe("slack draft stream initialization", () => {
 // configuration that triggers nativeStreaming (the path fixed by issue #59687).
 describe("slack native streaming reasoning leak guard (issue #59687)", () => {
   it("confirms streaming is enabled for partial+nativeStreaming=true (the affected path)", () => {
-    // The deliverWithStreaming path is only exercised when isSlackStreamingEnabled
-    // returns true. The reasoning guard (payload.isReasoning early return) lives
-    // inside that path, so we verify the enabling condition here.
     expect(isSlackStreamingEnabled({ mode: "partial", nativeStreaming: true })).toBe(true);
   });
 
   it("streaming is off when nativeStreaming is false (reasoning leak cannot occur)", () => {
     expect(isSlackStreamingEnabled({ mode: "partial", nativeStreaming: false })).toBe(false);
+  });
+});
+
+describe("shouldSuppressStreamingPayload — isReasoning guard (issue #59687)", () => {
+  it("suppresses payloads with isReasoning: true", () => {
+    expect(shouldSuppressStreamingPayload({ isReasoning: true })).toBe(true);
+  });
+
+  it("does not suppress payloads with isReasoning: false", () => {
+    expect(shouldSuppressStreamingPayload({ isReasoning: false })).toBe(false);
+  });
+
+  it("does not suppress payloads with isReasoning: undefined", () => {
+    expect(shouldSuppressStreamingPayload({ isReasoning: undefined })).toBe(false);
+    expect(shouldSuppressStreamingPayload({})).toBe(false);
   });
 });

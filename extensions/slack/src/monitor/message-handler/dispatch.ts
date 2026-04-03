@@ -108,6 +108,16 @@ export function shouldInitializeSlackDraftStream(params: {
   return params.previewStreamingEnabled && !params.useStreaming;
 }
 
+/**
+ * Returns true when a streaming payload should be silently dropped.
+ * Extended-thinking models (e.g. Claude with thinking enabled) emit
+ * intermediate reasoning payloads that must never reach the channel.
+ * @see https://github.com/openclaw/openclaw/issues/59687
+ */
+export function shouldSuppressStreamingPayload(payload: { isReasoning?: boolean }): boolean {
+  return payload.isReasoning === true;
+}
+
 export function resolveSlackStreamingThreadHint(params: {
   replyToMode: "off" | "first" | "all";
   incomingThreadTs: string | undefined;
@@ -377,7 +387,7 @@ export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessag
     // Extended-thinking models (e.g. Claude with thinking enabled) emit
     // intermediate reasoning payloads that must never reach the channel.
     // Fix for https://github.com/openclaw/openclaw/issues/59687
-    if (payload.isReasoning) {
+    if (shouldSuppressStreamingPayload(payload)) {
       return;
     }
     const reply = resolveSendableOutboundReplyParts(payload);

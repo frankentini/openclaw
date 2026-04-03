@@ -1,10 +1,48 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createTestRegistry } from "../../test-utils/channel-plugins.js";
 import {
   filterMessagingToolMediaDuplicates,
   shouldSuppressMessagingToolReplies,
 } from "./reply-payloads.js";
+
+/**
+ * Minimal Slack channel plugin stub that provides `parseExplicitTarget`
+ * so the provider-agnostic dedup path in `targetsMatchForSuppression` is
+ * exercised instead of falling back to plain string equality.
+ */
+function createSlackTestChannelPlugin() {
+  return {
+    pluginId: "slack",
+    plugin: {
+      id: "slack",
+      meta: {
+        id: "slack",
+        label: "Slack",
+        selectionLabel: "Slack",
+        docsPath: "/channels/slack",
+        blurb: "test stub",
+      },
+      capabilities: { chatTypes: ["direct", "channel"] as const },
+      config: { listAccountIds: () => [], resolveAccount: () => ({}) },
+      messaging: {
+        parseExplicitTarget: ({ raw }: { raw: string }) => {
+          const trimmed = raw.trim();
+          const userMatch = /^user:(.+)$/i.exec(trimmed);
+          if (userMatch) {
+            return { to: userMatch[1], chatType: "direct" as const };
+          }
+          const channelMatch = /^channel:(.+)$/i.exec(trimmed);
+          if (channelMatch) {
+            return { to: channelMatch[1], chatType: "channel" as const };
+          }
+          return null;
+        },
+      },
+    },
+    source: "test",
+  };
+}
 
 describe("filterMessagingToolMediaDuplicates", () => {
   it("strips mediaUrl when it matches sentMediaUrls", () => {
@@ -171,43 +209,56 @@ describe("shouldSuppressMessagingToolReplies", () => {
   });
 
   // Slack dedup — fix for https://github.com/openclaw/openclaw/issues/59687
-  it("suppresses Slack DM replies when the tool target matches the origin user", () => {
-    expect(
-      shouldSuppressMessagingToolReplies({
-        messageProvider: "slack",
-        originatingTo: "user:U12345",
-        messagingToolSentTargets: [{ tool: "message", provider: "slack", to: "user:U12345" }],
-      }),
-    ).toBe(true);
-  });
+  // Reset the plugin registry with a Slack stub so the provider-agnostic
+  // parseExplicitTargetForChannel("slack", ...) path is exercised.
+  describe("with Slack channel plugin registered", () => {
+    beforeEach(() => {
+      setActivePluginRegistry(createTestRegistry([createSlackTestChannelPlugin()]));
+    });
 
-  it("does not suppress Slack DM replies when the tool target is a different user", () => {
-    expect(
-      shouldSuppressMessagingToolReplies({
-        messageProvider: "slack",
-        originatingTo: "user:U12345",
-        messagingToolSentTargets: [{ tool: "message", provider: "slack", to: "user:U99999" }],
-      }),
-    ).toBe(false);
-  });
+    afterEach(() => {
+      // Restore to a clean default (empty) so other tests aren't affected.
+      setActivePluginRegistry(undefined as never);
+    });
 
-  it("suppresses Slack channel replies when the tool target matches the origin channel", () => {
-    expect(
-      shouldSuppressMessagingToolReplies({
-        messageProvider: "slack",
-        originatingTo: "channel:C12345",
-        messagingToolSentTargets: [{ tool: "message", provider: "slack", to: "channel:C12345" }],
-      }),
-    ).toBe(true);
-  });
+    it("suppresses Slack DM replies when the tool target matches the origin user", () => {
+      expect(
+        shouldSuppressMessagingToolReplies({
+          messageProvider: "slack",
+          originatingTo: "user:U12345",
+          messagingToolSentTargets: [{ tool: "message", provider: "slack", to: "user:U12345" }],
+        }),
+      ).toBe(true);
+    });
 
-  it("does not suppress Slack replies when providerless target does not match origin route", () => {
-    expect(
-      shouldSuppressMessagingToolReplies({
-        messageProvider: "slack",
-        originatingTo: "user:U12345",
-        messagingToolSentTargets: [{ tool: "message", provider: "", to: "user:U99999" }],
-      }),
-    ).toBe(false);
-  });
+    it("does not suppress Slack DM replies when the tool target is a different user", () => {
+      expect(
+        shouldSuppressMessagingToolReplies({
+          messageProvider: "slack",
+          originatingTo: "user:U12345",
+          messagingToolSentTargets: [{ tool: "message", provider: "slack", to: "user:U99999" }],
+        }),
+      ).toBe(false);
+    });
+
+    it("suppresses Slack channel replies when the tool target matches the origin channel", () => {
+      expect(
+        shouldSuppressMessagingToolReplies({
+          messageProvider: "slack",
+          originatingTo: "channel:C12345",
+          messagingToolSentTargets: [{ tool: "message", provider: "slack", to: "channel:C12345" }],
+        }),
+      ).toBe(true);
+    });
+
+    it("does not suppress Slack replies when providerless target does not match origin route", () => {
+      expect(
+        shouldSuppressMessagingToolReplies({
+          messageProvider: "slack",
+          originatingTo: "user:U12345",
+          messagingToolSentTargets: [{ tool: "message", provider: "", to: "user:U99999" }],
+        }),
+      ).toBe(false);
+    });
+  }); // end "with Slack channel plugin registered"
 });
