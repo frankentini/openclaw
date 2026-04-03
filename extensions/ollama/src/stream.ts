@@ -714,15 +714,11 @@ export function createOllamaStreamFn(
         // Apply request timeout if configured and no external signal is provided.
         // Local Ollama may need longer timeout than the default agent timeout.
         let finalSignal: AbortSignal | undefined = options?.signal;
+        let timeoutId: ReturnType<typeof setTimeout> | undefined;
         if (!finalSignal && defaultTimeoutMs && defaultTimeoutMs > 0) {
           const timeoutController = new AbortController();
-          const timeoutId = setTimeout(() => timeoutController.abort(), defaultTimeoutMs);
+          timeoutId = setTimeout(() => timeoutController.abort(), defaultTimeoutMs);
           finalSignal = timeoutController.signal;
-          // Clean up timeout on completion
-          void response.clone().then(
-            () => clearTimeout(timeoutId),
-            () => clearTimeout(timeoutId),
-          );
         }
 
         const response = await fetch(chatUrl, {
@@ -731,6 +727,11 @@ export function createOllamaStreamFn(
           body: JSON.stringify(body),
           signal: finalSignal,
         });
+
+        // Clean up timeout if we set one
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
 
         if (!response.ok) {
           const errorText = await response.text().catch(() => "unknown error");
