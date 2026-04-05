@@ -3,6 +3,14 @@ import { extractToolCallsFromAssistant, extractToolResultId } from "./tool-call-
 
 const TOOL_CALL_NAME_MAX_CHARS = 64;
 const TOOL_CALL_NAME_RE = /^[A-Za-z0-9_-]+$/;
+const RAW_TOOL_CALL_BLOCK_TYPES = new Set([
+  "toolCall",
+  "toolUse",
+  "functionCall",
+  "tool_use",
+  "tool_call",
+  "function_call",
+]);
 
 type RawToolCallBlock = {
   type?: unknown;
@@ -17,10 +25,7 @@ function isRawToolCallBlock(block: unknown): block is RawToolCallBlock {
     return false;
   }
   const type = (block as { type?: unknown }).type;
-  return (
-    typeof type === "string" &&
-    (type === "toolCall" || type === "toolUse" || type === "functionCall")
-  );
+  return typeof type === "string" && RAW_TOOL_CALL_BLOCK_TYPES.has(type);
 }
 
 function hasToolCallInput(block: RawToolCallBlock): boolean {

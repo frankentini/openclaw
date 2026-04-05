@@ -8,7 +8,14 @@ import {
 } from "./session-transcript-repair.js";
 import { castAgentMessage, castAgentMessages } from "./test-helpers/agent-message-fixtures.js";
 
-const TOOL_CALL_BLOCK_TYPES = new Set(["toolCall", "toolUse", "functionCall"]);
+const TOOL_CALL_BLOCK_TYPES = new Set([
+  "toolCall",
+  "toolUse",
+  "functionCall",
+  "tool_use",
+  "tool_call",
+  "function_call",
+]);
 
 function getAssistantToolCallBlocks(messages: AgentMessage[]) {
   const assistant = messages[0] as Extract<AgentMessage, { role: "assistant" }> | undefined;
@@ -343,6 +350,25 @@ describe("sanitizeToolCallInputs", () => {
       ? assistant.content.map((block) => (block as { type?: unknown }).type)
       : [];
     expect(types).toEqual(["text", "toolUse"]);
+  });
+
+  it("drops snake_case raw tool-call blocks that are missing input payloads", () => {
+    const input = castAgentMessages([
+      {
+        role: "assistant",
+        content: [
+          { type: "text", text: "before" },
+          { type: "tool_use", id: "call_drop", name: "read" },
+        ],
+      },
+    ]);
+
+    const out = sanitizeToolCallInputs(input);
+    const assistant = out[0] as Extract<AgentMessage, { role: "assistant" }>;
+    const types = Array.isArray(assistant.content)
+      ? assistant.content.map((block) => (block as { type?: unknown }).type)
+      : [];
+    expect(types).toEqual(["text"]);
   });
 
   it.each([
