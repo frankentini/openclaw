@@ -1,15 +1,15 @@
 import type { AgentEvent } from "@mariozechner/pi-agent-core";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { MessagingToolSend } from "./pi-embedded-messaging.js";
 import {
   handleToolExecutionEnd,
   handleToolExecutionStart,
 } from "./pi-embedded-subscribe.handlers.tools.js";
-import { __testing as beforeToolCallTesting } from "./pi-tools.before-tool-call.js";
 import type {
   ToolCallSummary,
   ToolHandlerContext,
 } from "./pi-embedded-subscribe.handlers.types.js";
+import { __testing as beforeToolCallTesting } from "./pi-tools.before-tool-call.js";
 
 type ToolExecutionStartEvent = Extract<AgentEvent, { type: "tool_execution_start" }>;
 type ToolExecutionEndEvent = Extract<AgentEvent, { type: "tool_execution_end" }>;
@@ -372,6 +372,15 @@ describe("handleToolExecutionEnd exec approval prompts", () => {
 });
 
 describe("messaging tool media URL tracking", () => {
+  afterEach(() => {
+    beforeToolCallTesting.adjustedParamsByToolCallId.delete(
+      beforeToolCallTesting.buildAdjustedParamsKey({
+        runId: "run-test",
+        toolCallId: "tool-adjusted-message",
+      }),
+    );
+  });
+
   it("commits adjusted message tool params after before_tool_call rewrites send args", async () => {
     const { ctx } = createTestContext();
     const adjustedKey = beforeToolCallTesting.buildAdjustedParamsKey({
