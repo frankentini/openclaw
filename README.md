@@ -52,7 +52,7 @@ Model note: while many providers/models are supported, for the best experience a
 Runtime: **Node ≥22**.
 
 > **⚠️ Important:** Use **pnpm** for global installation. OpenClaw uses a pnpm workspace and
-> some channel plugin dependencies (Discord, Slack, Telegram, Feishu) may not resolve correctly
+> some channel plugin dependencies (Discord, Feishu, Slack, Telegram) may not resolve correctly
 > when installed via `npm install -g`. If you see errors like `Cannot find package '@slack/logger'`
 > or `Cannot find package '@buape/carbon'` after installing with npm, reinstall using pnpm.
 > Note: `openclaw doctor --fix` will also fail in this state — reinstalling with pnpm is the fix.
