@@ -139,7 +139,7 @@ describe("memory watcher config", () => {
         path.join(workspaceDir, "MEMORY.md"),
         path.join(workspaceDir, "memory.md"),
         path.join(workspaceDir, "memory", "**", "*.md"),
-        path.join(extraDir, "**", "**", "*.md"),
+        path.join(extraDir, "**", "*.md"),
       ]),
     );
     expect(options.ignoreInitial).toBe(true);
