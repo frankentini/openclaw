@@ -172,8 +172,8 @@ describe("memory watcher config", () => {
     ];
     expect(watchedPaths).toEqual(
       expect.arrayContaining([
-        path.join(extraDir, "**", "*.[pP][nN][gG]"),
-        path.join(extraDir, "**", "*.[wW][aA][vV]"),
+        path.join(extraDir, "**", "**", "*.[pP][nN][gG]"),
+        path.join(extraDir, "**", "**", "*.[wW][aA][vV]"),
       ]),
     );
   });

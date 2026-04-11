@@ -352,7 +352,7 @@ export abstract class MemoryManagerSyncOps {
           continue;
         }
         if (stat.isDirectory()) {
-          watchPaths.add(path.join(entry, "**", "*.md"));
+          watchPaths.add(path.join(entry, "**", "**/*.md"));
           if (this.settings.multimodal.enabled) {
             for (const modality of this.settings.multimodal.modalities) {
               for (const extension of getMemoryMultimodalExtensions(modality)) {
